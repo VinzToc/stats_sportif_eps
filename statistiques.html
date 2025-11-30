@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdnjs.cloudflare.com https://script.google.com https://script.googleusercontent.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://script.google.com https://script.googleusercontent.com;">
+    <title>Statistiques du Sportif - Bilan Observation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+
+        .player-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+        }
+
+        .player-name {
+            font-weight: 700;
+            font-size: 1.2em;
+        }
+
+        .observer-text {
+            opacity: 0.9;
+        }
+
+        .observer-name {
+            font-weight: 600;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto 30px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .stats-summary {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            color: #667eea;
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .analysis-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+
+        .analysis-subtitle {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analysis-content {
+            color: #555;
+            line-height: 1.6;
+            font-size: 1em;
+        }
+
+        .strengths-box {
+            border-left-color: #43e97b;
+        }
+
+        .strengths-box .analysis-subtitle {
+            color: #43e97b;
+        }
+
+        .weaknesses-box {
+            border-left-color: #f5576c;
+        }
+
+        .weaknesses-box .analysis-subtitle {
+            color: #f5576c;
+        }
+
+        .footer-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: auto;
+            transition: all 0.2s;
+        }
+
+        .footer-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(245, 87, 108, 0.4);
+        }
+
+        .footer-button:active {
+            transform: translateY(0);
+        }
+
+        .icon {
+            display: inline-block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.4em;
+            }
+
+            .player-info {
+                font-size: 0.95em;
+            }
+
+            .section-title {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Statistiques du Sportif - Bilan de l'Observation</h1>
+        </header>
+
+        <div class="player-info">
+            <span class="player-name" id="playerName">-</span>
+            <span class="observer-text">observé par</span>
+            <span class="observer-name" id="observerName">-</span>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="radarChart"></canvas>
+        </div>
+
+        <div class="stats-summary">
+            <h2 class="section-title">Bilan et objectifs</h2>
+            
+            <div class="analysis-box strengths-box">
+                <div class="analysis-subtitle">
+                    <span class="icon">✓</span>
+                    <span>Points positifs</span>
+                </div>
+                <div class="analysis-content" id="strengthsText">
+                    Analyse en cours...
+                </div>
+            </div>
+
+            <div class="analysis-box weaknesses-box">
+                <div class="analysis-subtitle">
+                    <span class="icon">⚠</span>
+                    <span>Points d'attention</span>
+                </div>
+                <div class="analysis-content" id="weaknessesText">
+                    Analyse en cours...
+                </div>
+            </div>
+        </div>
+
+        <button class="footer-button" id="newAnalysisBtn">Nouvelle analyse ?</button>
+    </div>
+
+    <script>
+        // Récupération des données finales
+        const finalData = JSON.parse(localStorage.getItem('observationFinalData'));
+
+        if (!finalData) {
+            alert('Erreur : Aucune donnée trouvée. Retour à la page d\'accueil.');
+            window.location.href = 'index.html';
+        }
+
+        // Affichage des informations du joueur et de l'observateur
+        document.getElementById('playerName').textContent = finalData.joueur;
+        document.getElementById('observerName').textContent = finalData.observateur;
+
+        // Préparation des données pour le graphique radar
+        const labels = [];
+        const data = [];
+        const totalActions = [];
+
+        for (let i = 1; i <= finalData.nbObservables; i++) {
+            labels.push(finalData.items[i - 1]);
+            const count = finalData.counts[`item${i}`] || 0;
+            data.push(count);
+            totalActions.push({ label: finalData.items[i - 1], count: count });
+        }
+
+        const totalCount = data.reduce((a, b) => a + b, 0);
+
+        // Création du graphique radar
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        const radarChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nombre d\'actions',
+                    data: data,
+                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(102, 126, 234, 1)',
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        },
+                        pointLabels: {
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: `Analyse des ${totalCount} actions observées`,
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        color: '#667eea'
+                    }
+                }
+            }
+        });
+
+        // Analyse automatique des points forts et faibles
+        function generateAnalysis() {
+            // Tri des actions par nombre
+            const sortedActions = [...totalActions].sort((a, b) => b.count - a.count);
+            
+            // Calcul de la moyenne
+            const average = totalCount / finalData.nbObservables;
+            
+            // Points forts (au-dessus de la moyenne)
+            const strengths = sortedActions.filter(action => action.count > average && action.count > 0);
+            
+            // Points faibles (en dessous de la moyenne)
+            const weaknesses = sortedActions.filter(action => action.count < average || action.count === 0);
+
+            // Génération du texte des points forts
+            let strengthsText = '';
+            if (strengths.length > 0) {
+                const topActions = strengths.slice(0, 3);
+                strengthsText = `${finalData.joueur} se distingue particulièrement dans les domaines suivantes : `;
+                strengthsText += topActions.map(a => `<strong>${a.label}</strong> (${a.count} fois)`).join(', ');
+                strengthsText += `. Ces compétences sont ses atouts majeurs et témoignent d'une bonne maîtrise pour les actions observées.`;
+            } else {
+                strengthsText = `${finalData.joueur} montre un profil équilibré sur l'ensemble des actions observées.`;
+            }
+
+            // Génération du texte des points à travailler
+            let weaknessesText = '';
+            if (weaknesses.length > 0) {
+                const bottomActions = weaknesses.filter(a => a.count === 0);
+                const lowActions = weaknesses.filter(a => a.count > 0 && a.count < average);
+                
+                if (bottomActions.length > 0) {
+                    weaknessesText += `Les actions suivantes n'ont pas été observées : `;
+                    weaknessesText += bottomActions.map(a => `<strong>${a.label}</strong>`).join(', ');
+                    weaknessesText += `. `;
+                }
+                
+                if (lowActions.length > 0) {
+                    const focusActions = lowActions.slice(-3);
+                    weaknessesText += `Les action suivantes sont peu observées : `;
+                    weaknessesText += focusActions.map(a => `<strong>${a.label}</strong> (${a.count} fois seulement)`).join(', ');
+                    weaknessesText += `.`;
+                }
+                
+                weaknessesText += ` Elles reflètent les points à travailler ou confortent l'analyse des points positifs.`;
+            } else {
+                weaknessesText = `L'observation montre un équilibre sur l'ensemble des actions observées. Le sportif présente un profil complet et équilibré si les items choisis étaient relatifs uniquement à des actions positives ou des phases de jeu. Le joueur est en phase de progression si les items observés étaient équilibrés entre positif et négatif.`;
+            }
+
+            document.getElementById('strengthsText').innerHTML = strengthsText;
+            document.getElementById('weaknessesText').innerHTML = weaknessesText;
+
+            // Sauvegarde pour Google Sheets
+            return {
+                strengths: strengthsText.replace(/<\/?strong>/g, ''),
+                weaknesses: weaknessesText.replace(/<\/?strong>/g, '')
+            };
+        }
+
+        const analysis = generateAnalysis();
+
+        // Préparation des données pour Google Sheets
+        function prepareSheetData() {
+            const sheetData = {
+                date: finalData.date,
+                activite: finalData.activite,
+                observateur: finalData.observateur,
+                joueur: finalData.joueur,
+                duree: finalData.duration,
+                items: {},
+                pointsForts: analysis.strengths,
+                pointsFaibles: analysis.weaknesses
+            };
+
+            // Ajout des items et leurs compteurs
+            for (let i = 1; i <= 12; i++) {
+                if (i <= finalData.nbObservables) {
+                    sheetData.items[`nom${i}`] = finalData.items[i - 1];
+                    sheetData.items[`count${i}`] = finalData.counts[`item${i}`] || 0;
+                } else {
+                    sheetData.items[`nom${i}`] = '';
+                    sheetData.items[`count${i}`] = '';
+                }
+            }
+
+            return sheetData;
+        }
+
+        const sheetData = prepareSheetData();
+        
+        // Sauvegarde dans localStorage pour référence
+        localStorage.setItem('lastSheetData', JSON.stringify(sheetData));
+
+        // Fonction pour envoyer les données à Google Sheets
+        function sendToGoogleSheets() {
+            // ⚠️ IMPORTANT: Remplacez cette URL par celle de votre Web App Google Apps Script
+            const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw-yd75Dj14Lzfc4Z90ibxsVGOW9v-L3Oli0xXIU1f0h1_CXtriajMO-2EHg88vr3aM/exec';
+            
+            // Vérification que l'URL a été configurée
+            if (WEB_APP_URL === 'https://script.google.com/macros/s/AKfycbw-yd75Dj14Lzfc4Z90ibxsVGOW9v-L3Oli0xXIU1f0h1_CXtriajMO-2EHg88vr3aM/exec') {
+                console.warn('⚠️ URL du Web App non configurée. Les données ne seront pas envoyées à Google Sheets.');
+                console.log('📋 Données à envoyer:', sheetData);
+                return;
+            }
+            
+            console.log('📤 Envoi des données à Google Sheets...');
+            console.log('Données:', sheetData);
+            
+            // Création d'un formulaire pour envoyer les données
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = WEB_APP_URL;
+            form.target = 'hidden_iframe';
+            form.style.display = 'none';
+            
+            // Ajout d'un champ avec les données JSON
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'data';
+            input.value = JSON.stringify(sheetData);
+            form.appendChild(input);
+            
+            // Création d'une iframe cachée pour recevoir la réponse
+            let iframe = document.getElementById('hidden_iframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'hidden_iframe';
+                iframe.name = 'hidden_iframe';
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+            }
+            
+            // Ajout du formulaire au document et soumission
+            document.body.appendChild(form);
+            
+            // Gestion de la réponse
+            iframe.onload = function() {
+                console.log('✅ Données envoyées à Google Sheets avec succès');
+                setTimeout(function() {
+                    document.body.removeChild(form);
+                }, 1000);
+            };
+            
+            // Envoi du formulaire
+            form.submit();
+            
+            // Message de confirmation après un court délai
+            setTimeout(function() {
+                console.log('✅ Requête envoyée. Vérifiez votre Google Sheets.');
+            }, 500);
+        }
+
+        // Envoi automatique des données
+        sendToGoogleSheets();
+
+        // Bouton Nouvelle analyse
+        document.getElementById('newAnalysisBtn').addEventListener('click', function() {
+            if (confirm('Commencer une nouvelle analyse ? Toutes les données actuelles seront réinitialisées.')) {
+                localStorage.clear();
+                window.location.href = 'index.html';
+            }
+        });
+
+        // Log des données pour vérification
+        console.log('Données préparées pour Google Sheets:', sheetData);
+    </script>
+</body>
+</html>
